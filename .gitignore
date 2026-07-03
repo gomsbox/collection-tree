@@ -1,0 +1,19 @@
+# 참고용 목업 원본 이미지(용량이 커서 배포 저장소에는 불필요, app/assets에 필요한 크롭만 이미 반영됨)
+img/
+
+# 별도 프로젝트(사용하지 않음)
+나의-수집-자랑하기/
+
+# 벤치마킹 리서치(비공개로 보관)
+요구정의서_전선위의새들벤치마킹버전.md
+
+# 실제 배포된 백엔드 URL(민감 정보) — GitHub Actions 시크릿(SHEET_API_URL)으로 배포 시에만 주입한다.
+# 로컬 개발용 값은 이 파일을 그대로 두고 SHEET_API_URL만 채워서 쓰면 된다.
+app/config.js
+
+# OS / 편집기
+.DS_Store
+
+# 테스트 산출물
+.playwright-mcp/
+node_modules/

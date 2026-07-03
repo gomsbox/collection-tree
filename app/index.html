@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>나의 수집 자랑하기</title>
+<meta name="description" content="내가 가진 수집품을 캐릭터로 만들어 나무에 매달며 자랑하는 웹 서비스" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app" class="app">
+
+  <main class="layout">
+    <aside class="panel" id="panel">
+      <div class="brand">🌿 나의 수집 자랑하기</div>
+      <p class="tagline">나무에 내가 자랑하고 싶은 소비를 키링으로 달아 보세요 ✨</p>
+      <div class="mode-indicator" id="modeIndicator"></div>
+
+      <div class="recorder-card" id="recorderCard">
+        <div class="recorder-avatar">🙂</div>
+        <div class="recorder-info">
+          <span>기록자: <strong id="recorderName">-</strong></span>
+        </div>
+        <button id="logoutBtn" class="icon-btn" title="로그아웃" aria-label="로그아웃">🚪</button>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="openModalBtn">✨ 자랑하기</button>
+
+      <div class="counter-card">
+        <div class="counter-icon">🌱</div>
+        <div class="counter-body">
+          <div class="counter-label">총 수집 개수</div>
+          <div class="counter-value">총 <span id="counterValue">0</span>개 <span class="counter-party" id="counterParty">🎉</span></div>
+        </div>
+      </div>
+
+      <div class="panel-buttons">
+        <button class="btn btn-secondary" id="loadBtn">📂 불러오기</button>
+        <button class="btn btn-secondary" id="clearBtn">🗑️ 내 항목 비우기</button>
+      </div>
+
+      <div class="list-header">
+        <span>등록된 수집 아이템 <span class="hint-dot" title="나무에 매달린 순서와 겹침 순서를 조절할 수 있어요.">ⓘ</span></span>
+        <label class="my-items-toggle" id="myItemsToggleWrap">
+          <input type="checkbox" id="myItemsToggle" /> 내 아이템만 보기
+        </label>
+      </div>
+      <ul class="record-list" id="recordList">
+        <li class="empty-hint" id="emptyHint">아직 등록된 수집품이 없어요.<br/>‘자랑하기’ 버튼을 눌러 첫 캐릭터를 매달아 보세요!</li>
+      </ul>
+
+      <button class="btn btn-primary btn-block share-btn" id="shareBtn">🔗 공유 링크 복사</button>
+      <div class="readonly-badge hidden" id="readonlyBadge">👀 읽기 전용 보기 — 키링을 클릭하면 정보를 볼 수 있어요</div>
+    </aside>
+
+    <section class="stage">
+      <div class="stage-utility">
+        <button class="util-btn" id="resetBtn" title="카메라 리셋">🔄 <span>리셋</span></button>
+        <button class="util-btn" id="captureBtn" title="화면 캡처">📸 <span>캡처</span></button>
+        <button class="util-btn" id="musicBtn" title="배경음악 토글">🎵 <span>음악</span></button>
+      </div>
+
+      <div class="tree-viewport" id="treeViewport">
+        <div class="tree-stage" id="treeStage">
+          <svg id="treeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div class="tree-hint">키링을 클릭하면 수집품 정보를 볼 수 있어요 🔍</div>
+      </div>
+
+      <div class="category-carousel" id="categoryCarousel"></div>
+    </section>
+  </main>
+
+  <footer class="legend" id="categoryLegend">
+    <span class="legend-title">ⓘ 카테고리 기준 (마스터 데이터)</span>
+    <span class="legend-items" id="legendItems"></span>
+  </footer>
+</div>
+
+<!-- 최초 진입 시 기록자 로그인/등록 (F1 + 간단 로그인) -->
+<div class="overlay hidden" id="onboardingOverlay">
+  <div class="onboarding-card">
+    <div class="onboarding-emoji">🌳</div>
+    <h2>나의 수집 자랑하기</h2>
+    <p>이름과 비밀번호로 로그인해 주세요.<br/>처음이면 자동으로 계정이 만들어져요!</p>
+    <input id="onboardingInput" placeholder="이름을 입력해 주세요" maxlength="20" autocomplete="username" />
+    <input id="onboardingPassword" type="password" placeholder="비밀번호를 입력해 주세요" maxlength="40" autocomplete="current-password" />
+    <div class="field-error" id="onboardingError"></div>
+    <button class="btn btn-primary btn-block" id="onboardingConfirm">시작하기</button>
+    <p class="onboarding-note">다른 기록자도 각자의 이름·비밀번호로 로그인해 이 나무에 함께 키링을 등록할 수 있어요. 본인이 등록한 항목만 수정·삭제할 수 있어요.</p>
+  </div>
+</div>
+
+<!-- 수집품 등록 모달 (F2/F3) -->
+<div class="overlay hidden" id="modalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-close" id="modalClose" aria-label="닫기">✕</button>
+    <h2 id="modalTitle">✨ 수집품 자랑하기</h2>
+    <p class="modal-sub">캐릭터와 카테고리를 선택하고 정보를 입력해 주세요.</p>
+
+    <div class="modal-body">
+      <div class="modal-form">
+        <section>
+          <h3><span class="step-badge">1</span> 캐릭터 외형</h3>
+          <div class="character-grid" id="characterGrid"></div>
+        </section>
+
+        <section>
+          <h3><span class="step-badge">2</span> 카테고리 선택</h3>
+          <div class="category-grid" id="categoryGrid"></div>
+        </section>
+
+        <section>
+          <h3><span class="step-badge">3</span> 정보를 입력해 주세요</h3>
+          <div class="form-row">
+            <div class="field">
+              <label for="nameInput">무엇인지 설명</label>
+              <textarea id="nameInput" maxlength="120" placeholder="수집품에 대해 간단히 설명해 주세요."></textarea>
+              <div class="field-hint"><span id="nameCount">0</span> / 120</div>
+            </div>
+            <div class="field">
+              <label for="linkInput">제품 링크 URL</label>
+              <input id="linkInput" type="url" placeholder="https://example.com" />
+              <div class="field-hint">🔗 클릭 시 새 탭으로 이동됩니다.</div>
+              <div class="field-error" id="linkError"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="reviewInput">간단 후기 (선택)</label>
+            <textarea id="reviewInput" maxlength="200" placeholder="실제 써보니 어땠는지 한 줄 후기를 남겨보세요."></textarea>
+          </div>
+
+          <div class="field">
+            <label>사진 첨부 (선택)</label>
+            <div class="photo-row">
+              <label class="photo-drop" id="photoDrop">
+                <input type="file" id="photoInput" accept="image/*" hidden />
+                <span>📷 사진 추가<br/>또는 드래그 앤 드롭</span>
+              </label>
+              <div class="photo-thumb hidden" id="photoThumb">
+                <img id="photoThumbImg" alt="첨부 사진 미리보기" />
+                <button type="button" id="photoRemove" aria-label="사진 삭제">✕</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="modal-preview">
+        <h3>✨ 미리보기</h3>
+        <p class="preview-sub">등록 시 이렇게 보여져요!</p>
+        <div class="preview-chip" id="previewCategoryChip">카테고리를 선택해 주세요</div>
+        <div class="preview-card">
+          <div class="preview-photo" id="previewPhoto">🐰</div>
+          <div class="preview-name" id="previewName">수집품 설명을 입력해 주세요</div>
+          <p class="preview-review hidden" id="previewReview"></p>
+          <div class="preview-meta">
+            <span id="previewRecorder">기록자</span>
+            <span>방금 전</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modalCancel">취소</button>
+      <button class="btn btn-primary btn-lg" id="modalApply">✨ 적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 나무 키링 클릭 시 상세정보 + 링크 팝업 -->
+<div class="overlay hidden" id="charmDetailOverlay">
+  <div class="detail-card">
+    <button class="modal-close" id="detailClose" aria-label="닫기">✕</button>
+    <div class="detail-hero">
+      <img id="detailCharacterImg" alt="" />
+      <img id="detailCategoryBadge" class="detail-category-badge" alt="" />
+    </div>
+    <div class="preview-chip" id="detailCategoryChip"></div>
+    <h3 id="detailTitle" class="detail-title"></h3>
+    <div class="detail-photo hidden" id="detailPhotoWrap">
+      <img id="detailPhoto" alt="첨부 사진" />
+    </div>
+    <div class="preview-meta detail-meta">
+      <span id="detailRecorder"></span>
+      <span id="detailDate"></span>
+    </div>
+    <div class="detail-review hidden" id="detailReviewWrap">
+      <div class="detail-review-label">📝 간단 후기</div>
+      <p id="detailReview"></p>
+    </div>
+    <a id="detailLinkBtn" class="btn btn-primary btn-block btn-lg" href="#" target="_blank" rel="noopener noreferrer">🛒 구매처 링크로 이동</a>
+  </div>
+</div>
+
+<div class="toast-root" id="toastRoot"></div>
+
+<script src="config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/remoteStorage.js"></script>
+<script src="js/share.js"></script>
+<script src="js/tree.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
