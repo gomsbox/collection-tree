@@ -181,6 +181,42 @@ function createRecord_(payload) {
   }
 }
 
+/** payload: { recorder, token, id, name, category, characterStyle, productLink, review, photoUrl } */
+function updateRecord_(payload) {
+  if (!verifyToken_(payload.recorder, payload.token)) return { ok: false, reason: "unauthorized" };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = getSheet_(RECORDS_SHEET, RECORDS_HEADERS);
+    var row = findRecordRow_(sheet, payload.id);
+    if (row === -1) return { ok: false, reason: "not-found" };
+
+    var existing = sheet.getRange(row, 1, 1, RECORDS_HEADERS.length).getValues()[0];
+    var record = {};
+    RECORDS_HEADERS.forEach(function (h, i) {
+      record[h] = existing[i];
+    });
+    if (record.recorder !== payload.recorder) return { ok: false, reason: "forbidden" };
+
+    record.name = String(payload.name || "").slice(0, 120);
+    record.category = String(payload.category || "").slice(0, 40);
+    record.characterStyle = String(payload.characterStyle || "").slice(0, 40);
+    record.productLink = String(payload.productLink || "").slice(0, 2000);
+    record.review = String(payload.review || "").slice(0, 200);
+    record.photoUrl = payload.photoUrl ? String(payload.photoUrl).slice(0, 45000) : "";
+    // id / recorder / order / createdAt은 그대로 유지한다.
+
+    sheet.getRange(row, 1, 1, RECORDS_HEADERS.length).setValues([
+      RECORDS_HEADERS.map(function (h) {
+        return record[h];
+      }),
+    ]);
+    return { ok: true, record: record };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function deleteRecord_(payload) {
   if (!verifyToken_(payload.recorder, payload.token)) return { ok: false, reason: "unauthorized" };
   var lock = LockService.getScriptLock();
@@ -285,6 +321,8 @@ function doPost(e) {
       return jsonResponse_(authenticate_(payload));
     case "createRecord":
       return jsonResponse_(createRecord_(payload));
+    case "updateRecord":
+      return jsonResponse_(updateRecord_(payload));
     case "deleteRecord":
       return jsonResponse_(deleteRecord_(payload));
     case "swapOrder":

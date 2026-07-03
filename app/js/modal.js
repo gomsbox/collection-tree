@@ -3,6 +3,7 @@ window.CT = window.CT || {};
 
 (function () {
   let draft = emptyDraft();
+  let editingId = null; // null이면 신규 등록, 값이 있으면 해당 id의 항목을 수정
   let onSubmitCallback = null;
   let getRecorderName = () => "기록자";
 
@@ -11,6 +12,12 @@ window.CT = window.CT || {};
   }
 
   function $(id) { return document.getElementById(id); }
+
+  // 이미지가 없는 카테고리(예: 음식)는 이모지로 대체 표시한다.
+  function thumbHtml(entity, className) {
+    if (entity.img) return `<img class="${className}" src="${entity.img}" alt="${entity.label}" />`;
+    return `<span class="${className} opt-thumb-emoji">${entity.emoji}</span>`;
+  }
 
   function isValidUrl(value) {
     try {
@@ -55,7 +62,7 @@ window.CT = window.CT || {};
       card.setAttribute("tabindex", "0");
       card.innerHTML = `
         <div class="check-badge" style="background:${c.color}">✓</div>
-        <img class="opt-thumb opt-thumb-sm" src="${c.img}" alt="${c.label}" />
+        ${thumbHtml(c, "opt-thumb opt-thumb-sm")}
         <div class="opt-label">${c.label}</div>
       `;
       card.addEventListener("click", () => {
@@ -71,7 +78,7 @@ window.CT = window.CT || {};
     const chip = $("previewCategoryChip");
     const category = CT.getCategory(draft.category);
     if (category) {
-      chip.innerHTML = `<img src="${category.img}" alt="" />${category.label}`;
+      chip.innerHTML = `${thumbHtml(category, "")}${category.label}`;
       chip.style.borderColor = category.color;
     } else {
       chip.innerHTML = "카테고리를 선택해 주세요";
@@ -100,16 +107,40 @@ window.CT = window.CT || {};
     }
   }
 
-  function resetForm() {
-    draft = emptyDraft();
-    $("nameInput").value = "";
-    $("nameCount").textContent = "0";
-    $("linkInput").value = "";
+  function resetForm(existingRecord) {
+    editingId = existingRecord ? existingRecord.id : null;
+    draft = existingRecord
+      ? {
+          characterStyle: existingRecord.characterStyle,
+          category: existingRecord.category,
+          name: existingRecord.name || "",
+          productLink: existingRecord.productLink || "",
+          review: existingRecord.review || "",
+          photoUrl: existingRecord.photoUrl || null,
+        }
+      : emptyDraft();
+
+    $("nameInput").value = draft.name;
+    $("nameCount").textContent = String(draft.name.length);
+    $("linkInput").value = draft.productLink;
     $("linkError").textContent = "";
-    $("reviewInput").value = "";
+    $("reviewInput").value = draft.review;
     $("photoInput").value = "";
-    $("photoThumb").classList.add("hidden");
-    $("photoDrop").classList.remove("hidden");
+    if (draft.photoUrl) {
+      $("photoThumbImg").src = draft.photoUrl;
+      $("photoThumb").classList.remove("hidden");
+      $("photoDrop").classList.add("hidden");
+    } else {
+      $("photoThumb").classList.add("hidden");
+      $("photoDrop").classList.remove("hidden");
+    }
+
+    $("modalTitle").textContent = editingId ? "✏️ 수집품 수정하기" : "✨ 수집품 자랑하기";
+    $("modalSub").textContent = editingId
+      ? "캐릭터와 카테고리, 정보를 수정해 주세요."
+      : "캐릭터와 카테고리를 선택하고 정보를 입력해 주세요.";
+    $("modalApply").textContent = editingId ? "✏️ 수정 완료" : "✨ 적용";
+
     renderCharacterGrid();
     renderCategoryGrid();
     updatePreview();
@@ -176,8 +207,8 @@ window.CT = window.CT || {};
     return ok;
   }
 
-  function open() {
-    resetForm();
+  function open(existingRecord) {
+    resetForm(existingRecord || null);
     $("modalOverlay").classList.remove("hidden");
     document.body.style.overflow = "hidden";
   }
@@ -241,6 +272,7 @@ window.CT = window.CT || {};
         return;
       }
       const record = {
+        id: editingId || undefined,
         characterStyle: draft.characterStyle,
         category: draft.category,
         name: draft.name.trim(),

@@ -6,7 +6,7 @@
 <title>나의 수집 자랑하기</title>
 <meta name="description" content="내가 가진 수집품을 캐릭터로 만들어 나무에 매달며 자랑하는 웹 서비스" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>" />
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
 <div id="app" class="app">
@@ -97,7 +97,7 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <button class="modal-close" id="modalClose" aria-label="닫기">✕</button>
     <h2 id="modalTitle">✨ 수집품 자랑하기</h2>
-    <p class="modal-sub">캐릭터와 카테고리를 선택하고 정보를 입력해 주세요.</p>
+    <p class="modal-sub" id="modalSub">캐릭터와 카테고리를 선택하고 정보를 입력해 주세요.</p>
 
     <div class="modal-body">
       <div class="modal-form">
@@ -116,8 +116,8 @@
           <div class="form-row">
             <div class="field">
               <label for="nameInput">무엇인지 설명</label>
-              <textarea id="nameInput" maxlength="120" placeholder="수집품에 대해 간단히 설명해 주세요."></textarea>
-              <div class="field-hint"><span id="nameCount">0</span> / 120</div>
+              <textarea id="nameInput" maxlength="10" placeholder="예: 안경 케이스"></textarea>
+              <div class="field-hint"><span id="nameCount">0</span> / 10</div>
             </div>
             <div class="field">
               <label for="linkInput">제품 링크 URL</label>
@@ -193,19 +193,20 @@
       <p id="detailReview"></p>
     </div>
     <a id="detailLinkBtn" class="btn btn-primary btn-block btn-lg" href="#" target="_blank" rel="noopener noreferrer">🛒 구매처 링크로 이동</a>
+    <button type="button" id="detailEditBtn" class="btn btn-secondary btn-block hidden">✏️ 수정하기</button>
   </div>
 </div>
 
 <div class="toast-root" id="toastRoot"></div>
 
-<script src="config.js"></script>
-<script src="js/data.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/remoteStorage.js"></script>
-<script src="js/share.js"></script>
-<script src="js/tree.js"></script>
-<script src="js/modal.js"></script>
-<script src="js/main.js"></script>
+<script src="config.js?v=2"></script>
+<script src="js/data.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/auth.js?v=2"></script>
+<script src="js/remoteStorage.js?v=2"></script>
+<script src="js/share.js?v=2"></script>
+<script src="js/tree.js?v=2"></script>
+<script src="js/modal.js?v=2"></script>
+<script src="js/main.js?v=2"></script>
 </body>
 </html>

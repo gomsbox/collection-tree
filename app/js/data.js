@@ -12,6 +12,7 @@ CT.CATEGORIES = [
   { id: "stationery_goods", label: "문구/굿즈", example: "펜", color: "#E7B82F", emoji: "✏️", img: "assets/categories/stationery_goods.png" },
   { id: "doll_figure", label: "인형/피규어", example: "피규어", color: "#3BAFA6", emoji: "🪆", img: "assets/categories/doll_figure.png" },
   { id: "plant_interior", label: "식물/인테리어", example: "화분", color: "#6BAE45", emoji: "🪴", img: "assets/categories/plant_interior.png" },
+  { id: "food", label: "음식", example: "디저트", color: "#E8604A", emoji: "🍽️", img: null },
 ];
 
 CT.CHARACTERS = [

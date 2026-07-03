@@ -216,20 +216,28 @@ window.CT = window.CT || {};
         badgeText.textContent = category ? category.emoji : "✨";
       }
 
-      // 이름표: "기록자의 수집품 이름"
-      const label = `${truncate(record.recorder, 6)}의 ${truncate(record.name, 10)}`;
-      const tagWidth = Math.min(190, Math.max(70, label.length * 8.2 + 20));
+      // 이름표: "기록자의" / "수집품 이름" 두 줄
+      const line1 = `${truncate(record.recorder, 6)}의`;
+      const line2 = truncate(record.name, 10);
+      const tagWidth = Math.min(190, Math.max(70, Math.max(line1.length, line2.length) * 9 + 20));
+      const tagHeight = 40;
       const tagY = pos.y + pos.r + 16;
+      const fontFamily = "'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif";
       const tag = el("g", {}, pop);
       el("rect", {
-        x: pos.x - tagWidth / 2, y: tagY, width: tagWidth, height: 25, rx: 12.5,
+        x: pos.x - tagWidth / 2, y: tagY, width: tagWidth, height: tagHeight, rx: 14,
         fill: "#fffdf6", stroke: color, "stroke-width": 1.4, opacity: 0.96,
       }, tag);
-      const tagText = el("text", {
-        x: pos.x, y: tagY + 17, "text-anchor": "middle", "font-size": 12.5, "font-weight": 600,
-        fill: "#4a3f2c", "font-family": "'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif",
+      const line1Text = el("text", {
+        x: pos.x, y: tagY + 17, "text-anchor": "middle", "font-size": 11.5, "font-weight": 500,
+        fill: "#7a7566", "font-family": fontFamily,
       }, tag);
-      tagText.textContent = label;
+      line1Text.textContent = line1;
+      const line2Text = el("text", {
+        x: pos.x, y: tagY + 32, "text-anchor": "middle", "font-size": 13, "font-weight": 700,
+        fill: "#4a3f2c", "font-family": fontFamily,
+      }, tag);
+      line2Text.textContent = line2;
 
       group.addEventListener("click", () => onCharmClickRef && onCharmClickRef(record));
       group.addEventListener("keydown", (e) => {

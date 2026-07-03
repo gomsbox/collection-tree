@@ -22,6 +22,7 @@ window.CT = window.CT || {};
   let musicOn = false;
   let audioCtx = null;
   let musicNodes = null;
+  let detailRecord = null; // 상세 팝업에 현재 표시 중인 레코드(수정 버튼에서 참조)
 
   const ACH_KEY = "collectionTree.achievements";
   const unlockedAchievements = new Set(JSON.parse(localStorage.getItem(ACH_KEY) || "[]"));
@@ -40,6 +41,16 @@ window.CT = window.CT || {};
 
   function generateId() {
     return "item_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  // 전용 이미지가 없는 카테고리(예: 음식)를 위해 이모지를 원형 배지 이미지로 대체 생성한다.
+  function emojiImageUri(emoji) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><text x="32" y="44" font-size="34" text-anchor="middle">${emoji}</text></svg>`;
+    return "data:image/svg+xml," + encodeURIComponent(svg);
+  }
+  function categoryImgSrc(category) {
+    if (!category) return "";
+    return category.img || emojiImageUri(category.emoji);
   }
 
   function isValidUrl(value) {
@@ -224,10 +235,12 @@ window.CT = window.CT || {};
           const actions = document.createElement("span");
           actions.className = "record-actions";
           actions.innerHTML = `
+            <button type="button" data-action="edit" title="수정">✏️</button>
             <button type="button" data-action="forward" title="앞으로">앞</button>
             <button type="button" data-action="backward" title="뒤로">뒤</button>
             <button type="button" data-action="delete" class="delete-btn" title="삭제">x</button>
           `;
+          actions.querySelector('[data-action="edit"]').addEventListener("click", () => openEditModal(record));
           actions.querySelector('[data-action="forward"]').addEventListener("click", () => moveRecord(index, 1));
           actions.querySelector('[data-action="backward"]').addEventListener("click", () => moveRecord(index, -1));
           actions.querySelector('[data-action="delete"]').addEventListener("click", () => deleteRecord(index));
@@ -272,7 +285,7 @@ window.CT = window.CT || {};
     charImg.alt = character ? character.label : "";
 
     const catBadge = $("detailCategoryBadge");
-    catBadge.src = category ? category.img : "";
+    catBadge.src = categoryImgSrc(category);
     catBadge.alt = category ? category.label : "";
     catBadge.style.borderColor = category ? category.color : "";
 
@@ -310,6 +323,9 @@ window.CT = window.CT || {};
       linkBtn.classList.add("hidden");
     }
 
+    $("detailEditBtn").classList.toggle("hidden", readOnly || record.recorder !== currentRecorder);
+    detailRecord = record;
+
     $("charmDetailOverlay").classList.remove("hidden");
   }
 
@@ -319,6 +335,9 @@ window.CT = window.CT || {};
 
   function wireCharmDetail() {
     $("detailClose").addEventListener("click", closeCharmDetail);
+    $("detailEditBtn").addEventListener("click", () => {
+      if (detailRecord) openEditModal(detailRecord);
+    });
     $("charmDetailOverlay").addEventListener("click", (e) => {
       if (e.target.id === "charmDetailOverlay") closeCharmDetail();
     });
@@ -342,7 +361,7 @@ window.CT = window.CT || {};
     active.forEach((c) => {
       const chip = document.createElement("div");
       chip.className = "category-chip";
-      chip.innerHTML = `<span class="dot" style="background:${c.color}"></span><img class="chip-thumb" src="${c.img}" alt="" />${c.label} · ${counts[c.id]}`;
+      chip.innerHTML = `<span class="dot" style="background:${c.color}"></span><img class="chip-thumb" src="${categoryImgSrc(c)}" alt="" />${c.label} · ${counts[c.id]}`;
       el.appendChild(chip);
     });
   }
@@ -367,11 +386,15 @@ window.CT = window.CT || {};
     renderCounter();
   }
 
-  // ---------- Record creation ----------
+  // ---------- Record creation / edit ----------
   async function handleAddRecord(partial) {
     if (!currentRecorder) {
       CT.toast.show("먼저 로그인해 주세요.");
       showLogin();
+      return;
+    }
+    if (partial.id) {
+      await updateRecord(partial);
       return;
     }
 
@@ -404,6 +427,51 @@ window.CT = window.CT || {};
     renderAll();
     checkAchievements();
     CT.toast.show("나무에 새 캐릭터를 매달았어요! ✨");
+  }
+
+  async function updateRecord(partial) {
+    const index = state.records.findIndex((r) => r.id === partial.id);
+    if (index === -1) return;
+    const existing = state.records[index];
+    if (existing.recorder !== currentRecorder) {
+      CT.toast.show("본인이 등록한 아이템만 수정할 수 있어요. 🔒");
+      return;
+    }
+
+    const fields = {
+      name: partial.name,
+      category: partial.category,
+      characterStyle: partial.characterStyle,
+      productLink: partial.productLink,
+      review: partial.review || "",
+      photoUrl: partial.photoUrl || null,
+    };
+
+    if (usingRemote) {
+      try {
+        const res = await CT.remote.updateRecord(currentRecorder, sessionToken, partial.id, fields);
+        if (!res || !res.ok) throw new Error(res && res.reason);
+        state.records[index] = res.record;
+      } catch (err) {
+        CT.toast.show("수정에 실패했어요. 네트워크를 확인해 주세요. ⚠️");
+        return;
+      }
+    } else {
+      state.records[index] = Object.assign({}, existing, fields);
+      persist();
+    }
+
+    renderAll();
+    CT.toast.show("수집품 정보를 수정했어요! ✏️");
+  }
+
+  function openEditModal(record) {
+    if (record.recorder !== currentRecorder) {
+      CT.toast.show("본인이 등록한 아이템만 수정할 수 있어요. 🔒");
+      return;
+    }
+    closeCharmDetail();
+    CT.modal.open(record);
   }
 
   // ---------- Login / Logout (간단 로그인) ----------
@@ -492,6 +560,9 @@ window.CT = window.CT || {};
     let lastY = 0;
 
     viewport.addEventListener("pointerdown", (e) => {
+      // 키링 위에서 누른 경우 포인터를 캡처하지 않는다 — 캡처하면 이후 click 이벤트의
+      // 타겟이 viewport 자신으로 바뀌어서 키링의 클릭 핸들러가 아예 실행되지 않는다.
+      if (e.target.closest(".charm-group")) return;
       dragging = true;
       lastX = e.clientX;
       lastY = e.clientY;

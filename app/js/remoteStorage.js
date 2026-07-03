@@ -26,8 +26,10 @@ window.CT = window.CT || {};
   }
 
   // echo 리다이렉트가 다른 요청(주로 listRecords)의 응답을 잘못 돌려주는 경우를 감지한다.
+  // swapOrder/listRecords는 정상 응답에도 records 배열이 들어있으므로 검사 대상에서 제외한다.
+  const NEVER_RETURNS_RECORDS = ["authenticate", "createRecord", "updateRecord", "deleteRecord", "clearMine"];
   function isMisroutedResponse(action, data) {
-    return action !== "listRecords" && !!data && Array.isArray(data.records);
+    return NEVER_RETURNS_RECORDS.includes(action) && !!data && Array.isArray(data.records);
   }
 
   async function callGet(action) {
@@ -76,6 +78,9 @@ window.CT = window.CT || {};
   function createRecord(recorder, token, record) {
     return callPost("createRecord", Object.assign({ recorder, token }, record));
   }
+  function updateRecord(recorder, token, id, fields) {
+    return callPost("updateRecord", Object.assign({ recorder, token, id }, fields));
+  }
   function deleteRecord(recorder, token, id) {
     return callPost("deleteRecord", { recorder, token, id });
   }
@@ -86,5 +91,5 @@ window.CT = window.CT || {};
     return callPost("clearMine", { recorder, token });
   }
 
-  CT.remote = { isConfigured, listRecords, authenticate, createRecord, deleteRecord, swapOrder, clearMine };
+  CT.remote = { isConfigured, listRecords, authenticate, createRecord, updateRecord, deleteRecord, swapOrder, clearMine };
 })();
